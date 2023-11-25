@@ -28,6 +28,7 @@ def get_llama(model):
 def llama_sequential(model, dataloader, dev):
     print('Starting ...')
 
+    breakpoint()
     use_cache = model.config.use_cache
     model.config.use_cache = False
     layers = model.model.layers
@@ -482,10 +483,27 @@ if __name__ == '__main__':
     if args.load:
         model = load_quant(args.model, args.load, args.wbits, args.groupsize)
     else:
-        model = get_llama(args.model)
-        model.eval()
+        # model = get_llama(args.model)
+        # model.eval()
 
-    dataloader, testloader = get_loaders(args.dataset, nsamples=args.nsamples, seed=args.seed, model=args.model, seqlen=model.seqlen)
+        import fire
+        from llama import Llama
+        from typing import List
+        ckpt_dir = '/data/harsha/llama/llama-2-7b/'
+        tokenizer_path = '/data/harsha/llama/tokenizer.model'
+        max_seq_len=512
+        max_batch_size=6
+        generator = Llama.build(
+        ckpt_dir=ckpt_dir,
+        tokenizer_path=tokenizer_path,
+        max_seq_len=max_seq_len,
+        max_batch_size=max_batch_size,
+        )
+
+
+    model = generator.model
+    tokenizer = generator.tokenizer
+    dataloader, testloader = get_loaders(args.dataset, nsamples=args.nsamples, seed=args.seed, model=args.model, tokenizer=tokenizer, seqlen=max_seq_len)
 
     if not args.load and args.wbits < 16 and not args.nearest:
         tick = time.time()

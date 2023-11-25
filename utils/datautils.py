@@ -59,16 +59,17 @@ def get_ptb(nsamples, seed, seqlen, model):
     return trainloader, testenc
 
 
-def get_c4(nsamples, seed, seqlen, model):
+def get_c4(nsamples, seed, seqlen, model, tokenizer = None):
     from datasets import load_dataset
     traindata = load_dataset('allenai/c4', 'allenai--c4', data_files={'train': 'en/c4-train.00000-of-01024.json.gz'}, split='train', use_auth_token=False)
     valdata = load_dataset('allenai/c4', 'allenai--c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'}, split='validation', use_auth_token=False)
 
-    from transformers import AutoTokenizer
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
-    except:
-        tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
+    if tokenizer is None:
+        from transformers import AutoTokenizer
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
+        except:
+            tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
 
     import random
     random.seed(seed)
@@ -76,7 +77,9 @@ def get_c4(nsamples, seed, seqlen, model):
     for _ in range(nsamples):
         while True:
             i = random.randint(0, len(traindata) - 1)
-            trainenc = tokenizer(traindata[i]['text'], return_tensors='pt')
+            # trainenc = tokenizer(traindata[i]['text'], return_tensors='pt')
+            breakpoint()
+            trainenc = tokenizer.encode(traindata[i]['text'], bos=True, eos=False)
             if trainenc.input_ids.shape[1] >= seqlen:
                 break
         i = random.randint(0, trainenc.input_ids.shape[1] - seqlen - 1)
@@ -176,7 +179,7 @@ def get_c4_new(nsamples, seed, seqlen, model):
     return trainloader, valenc
 
 
-def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model=''):
+def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model='', tokenizer = None):
     if 'wikitext2' in name:
         return get_wikitext2(nsamples, seed, seqlen, model)
     if 'ptb' in name:
@@ -185,5 +188,5 @@ def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model=''):
         return get_ptb(nsamples, seed, seqlen, model)
     if 'c4' in name:
         if 'new' in name:
-            return get_c4_new(nsamples, seed, seqlen, model)
-        return get_c4(nsamples, seed, seqlen, model)
+            return get_c4_new(nsamples, seed, seqlen, model, tokenizer = tokenizer)
+        return get_c4(nsamples, seed, seqlen, model, tokenizer=tokenizer)
